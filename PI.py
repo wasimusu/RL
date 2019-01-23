@@ -20,7 +20,7 @@ def argmax_action(state):
     # Try out all the (possible) action and choose the best action
     max_q, best_action = -1, -1
     # If we bet 0 we're not going to change anything
-    for action in range(1, min(state, num_states - state - 1)):
+    for action in range(1, min(state, num_states - state - 1) + 1):
         q = pHead * value[state + action] + pTail * value[state - action]
         if q >= max_q:
             best_action = action
@@ -32,9 +32,9 @@ def policy_evaluation():
     while True:
         delta = 0
         # Use policy to compute new value for each state
-        for state in range(0, num_states - 1):
+        for state in range(0, num_states - 1):  # Do not update the fine value-state
             previous_value = value[state]
-            action = int(policy[state])
+            action = int(policy[state])  # Take action according to policy for a given state and evaluate its' value
             value[state] = pHead * value[state + action] + pTail * value[state - action]
             delta = max(delta, abs(value[state] - previous_value))
 
@@ -43,8 +43,6 @@ def policy_evaluation():
 
 
 def policy_iteration():
-    policy_evaluation()
-
     # If we start at state 0, it quits because that's at the best state
     for state in range(1, num_states):
         previous_action = policy[state]
@@ -55,7 +53,7 @@ def policy_iteration():
             policy[state] = best_action
             policy_evaluation()
 
-    plt.plot(range(num_states), value)
+    plt.plot(range(num_states), policy, drawstyle="steps")
     plt.show()
 
 
