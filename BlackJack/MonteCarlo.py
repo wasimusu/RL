@@ -1,8 +1,7 @@
+""" Python implementation of Monte Carlo Simulation on BlackJack """
+
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-# Natural : Receiving a sum of 21 in the first two hands. A blackjack.
 
 
 def state_to_string(player_sum, useable_ace=0, upcard=2):
@@ -51,8 +50,8 @@ state_11 = state_to_string(11)
 state_22 = state_to_string(22)
 
 Q = dict(zip(states_action, np.random.uniform(0, 1, 400)))  # 400 = Number of States * Number of Action
-Q[state_action_to_string(state_11, 1)] = 0  # policy for state greater than 21
-Q[state_action_to_string(state_11, 0)] = 0  # policy for state greater than 21
+Q[state_action_to_string(state_11, 1)] = 0  # policy for state less than 12
+Q[state_action_to_string(state_11, 0)] = 0  # policy for state less than 12
 Q[state_action_to_string(state_22, 1)] = 0  # policy for state greater than 21
 Q[state_action_to_string(state_22, 0)] = 0  # policy for state greater than 21
 
@@ -97,6 +96,7 @@ def evaluate_game(dealer_hand, player_hand):
     loss : -1
     draw : 0
     """
+    # Natural : Receiving a sum of 21 in the first two hands. A blackjack.
 
     sum_dealer_hand = sum_deck(dealer_hand)
     sum_player_hand = sum_deck(player_hand)
@@ -120,7 +120,7 @@ def evaluate_game(dealer_hand, player_hand):
         return 1
 
 
-def update_Q(state, action, reward):
+def updateQ(state, action, reward):
     """ Apply incremental update to Q values for given state """
     state_visit_count[state] += 1
     state_action = state_action_to_string(state, action)
@@ -164,7 +164,7 @@ def generate_states_for_player_hand(player_hand, useable_ace, upcard):
             range(2, len(player_hand) + 1)]
 
 
-def generate_episode():
+def play_blackjack():
     # Draw cards until the player's hand sum to 12
 
     actions = []  # Series of actions that were taken
@@ -176,10 +176,8 @@ def generate_episode():
         actions.append(HIT)
         if sum_deck(player_hand) > 11: break
 
-    # If the sum if 21, the player won
-
-    # Dealer's first card is visible
     upcard = dealer_hand[0]
+    # If the sum if 21, the player won
 
     while True:
         useable_ace = 1 if 11 in player_hand else 0
@@ -195,16 +193,16 @@ def generate_episode():
 
             # Evaluate the game for reward
             reward = evaluate_game(dealer_hand, player_hand)
-            episode_states = generate_states_for_player_hand(player_hand, useable_ace, upcard)
+            episodic_states = generate_states_for_player_hand(player_hand, useable_ace, upcard)
 
             assert len(actions) == len(player_hand) + 1
             actions.pop(0)
             actions.pop(0)
-            assert len(actions) == len(episode_states)
+            assert len(actions) == len(episodic_states)
 
             # Determine the series of actions
-            for act, ep_state in zip(actions, episode_states):
-                update_Q(ep_state, action, reward)
+            for act, ep_state in zip(actions, episodic_states):
+                updateQ(ep_state, action, reward)
             break
 
     # Update the policy after each episode
@@ -219,7 +217,7 @@ def generate_episode():
 if __name__ == '__main__':
     for _ in range(10000):
         print(_, sum(policy.values()))
-        generate_episode()
+        play_blackjack()
 
     print(policy)
     print(state_visit_count)
