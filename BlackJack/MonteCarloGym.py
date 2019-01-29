@@ -1,4 +1,4 @@
-""" Python implementation of Monte Carlo Simulation on BlackJack """
+""" Python implementation of Monte Carlo Simulation on BlackJack using Gym"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,8 +46,8 @@ state_11 = state_to_string(11)
 state_22 = state_to_string(22)
 
 Q = dict(zip(states, np.random.uniform(0, 1, 200)))  # 400 = Number of States * Number of Action
-Q[state_11] = 0  # policy for state less than 12
-Q[state_22] = 0  # policy for state greater than 21
+Q[state_11] = 0  # Q for state less than 12
+Q[state_22] = 0  # Q for state greater than 21
 
 state_visit_count = dict(zip(states, [0] * len(states)))  # Keeping count of the visit for each state
 state_visit_count[state_22] = 0  # policy for state greater than 21
@@ -95,29 +95,43 @@ def play_blackjack():
 
 
 if __name__ == '__main__':
-    # print(states)
-    for _ in range(1000000):
+
+    for iteration in range(1000001):
         play_blackjack()
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+        if iteration == 10000 or iteration == 1000000:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
 
-    x, y = [], []
-    z_ace = []
-    z_no_ace = []
-    for ps in range(12, 22):
-        for upcard in range(1, 11):
-            x.append(ps)
-            y.append(upcard)
-            z_ace.append(Q[state_to_string(ps, upcard, True)])
-            z_no_ace.append(Q[state_to_string(ps, upcard, False)])
+            x, y = [], []
+            z_ace = []
+            z_no_ace = []
+            for ps in range(12, 22):
+                for upcard in range(1, 11):
+                    x.append(ps)
+                    y.append(upcard)
+                    z_ace.append(Q[state_to_string(ps, upcard, True)])
+                    z_no_ace.append(Q[state_to_string(ps, upcard, False)])
 
-    # fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    ax.plot_trisurf(x, y, z_ace, cmap=plt.cm.viridis, linewidth=0.2)
-    ax.set_xlabel("Players Hand")
-    ax.set_ylabel("Dealer Hand")
-    ax.set_zlabel("Expected Reward")
-    plt.title("Useable Ace")
+            # Useable ace
 
-    plt.show()
+            # ax = fig.gca(projection='3d')
+            # ax.plot_trisurf(x, y, z_ace, cmap=plt.cm.viridis, linewidth=0.2)
+            # ax.set_xlabel("Players Hand")
+            # ax.set_ylabel("Dealer Hand")
+            # ax.set_zlabel("Expected Reward")
+            # plt.title("Useable Ace {} Iteration".format(iteration))
+            # plt.show()
+            # plt.pause(1)
+
+            # Unuseable ace
+
+            ax = fig.add_subplot(111, projection='3d')
+            ax = fig.gca(projection='3d')
+            ax.plot_trisurf(x, y, z_no_ace, cmap=plt.cm.viridis, linewidth=0.2)
+            ax.set_xlabel("Players Hand")
+            ax.set_ylabel("Dealer Hand")
+            ax.set_zlabel("Expected Reward")
+            plt.title("No Useable Ace - {} Iteration".format(iteration))
+            plt.show()
+            plt.pause(1)

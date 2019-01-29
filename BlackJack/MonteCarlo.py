@@ -213,10 +213,10 @@ def play_blackjack():
             # print("Updated : ", state, policy[state], updated_action)
             policy[state] = argmax_action(state)
 
-
 if __name__ == '__main__':
-    for _ in range(10000):
-        print(_, sum(policy.values()))
+    for _ in range(5000000):
+        if _ % 1000 == 0:
+            print(_, sum(policy.values()))
         play_blackjack()
 
     print(policy)
