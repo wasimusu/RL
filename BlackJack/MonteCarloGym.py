@@ -99,7 +99,7 @@ if __name__ == '__main__':
     for iteration in range(1000001):
         play_blackjack()
 
-        if iteration == 10000 or iteration == 1000000:
+        if iteration == 1000 or iteration == 1000000:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
 
@@ -115,14 +115,14 @@ if __name__ == '__main__':
 
             # Useable ace
 
-            # ax = fig.gca(projection='3d')
-            # ax.plot_trisurf(x, y, z_ace, cmap=plt.cm.viridis, linewidth=0.2)
-            # ax.set_xlabel("Players Hand")
-            # ax.set_ylabel("Dealer Hand")
-            # ax.set_zlabel("Expected Reward")
-            # plt.title("Useable Ace {} Iteration".format(iteration))
-            # plt.show()
-            # plt.pause(1)
+            ax = fig.gca(projection='3d')
+            ax.plot_trisurf(x, y, z_ace, cmap=plt.cm.viridis, linewidth=0.2)
+            ax.set_xlabel("Players Hand")
+            ax.set_ylabel("Dealer Hand")
+            ax.set_zlabel("Expected Reward")
+            plt.title("Useable Ace {} Iteration".format(iteration))
+            plt.show()
+            plt.pause(1)
 
             # Unuseable ace
 
