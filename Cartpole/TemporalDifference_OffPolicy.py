@@ -53,9 +53,8 @@ def argmax_action(state):
 
 def update_Q(old_state, action, new_state, reward):
     """ Update Q using off policy TD control """
-    # print("Old state : {} \tAction : {} \tNew state : {} \tReward : {}".format(old_state, action, new_state, reward))
 
-    # This does not exist for the first iteration
+    # This does not exist for newly observed states
     if Q.get((old_state, action), -1) == -1:
         Q[(old_state, action)] = np.random.uniform(0, 0.05)
 
@@ -68,14 +67,12 @@ def play_game():
     """ Play one episode of the game, update policy and value for states """
 
     episode_states = []
-    state = env.reset()  # Start the game
+    state = env.reset()  # (Re)Start the game
 
     state = discrete(state)
     policy[state] = env.action_space.sample()
     Q[(state, env.action_space.sample())] = 0
     episode_states.append(state)
-
-    # TODO : Q[terminal, action] = 0 ? What is the terminal state
 
     done = False  # Is the episode complete?
     reward_ep = 0
@@ -84,17 +81,18 @@ def play_game():
         if np.random.uniform(0, 1) < epsilon:
             action = env.action_space.sample()
         else:
-            # If the current policy has associated action for given state choose it
             # A registered state always have an associated action
             # It should never raise KeyError
             action = policy.get(state)
 
         old_state = state
+        # Observe and log newly observed state
         state, reward, done, info = env.step(action)
-        reward_ep += reward
-
         state = discrete(state)
         episode_states.append(state)
+
+        reward_ep += reward  # Total sum in an episode
+        # TODO : Check average episodic reward over n trials
 
         # If this is a brand new state it does not have associated action
         if policy.get(state, -1) == -1:
@@ -113,6 +111,7 @@ def play_game():
     env.close()
 
     print("Episode reward : ", reward_ep)
+
     # Update the policy for each of the states encountered in the episode
     for index, state in enumerate(episode_states):
         policy[state] = argmax_action(state)
@@ -124,4 +123,5 @@ if __name__ == '__main__':
         if i % 10 == 0:
             # print("Episode ", i, "States : ", policy.items().__len__())
             pass
-    pass
+
+    # TODO: Every nth episode check if Q is converging or not

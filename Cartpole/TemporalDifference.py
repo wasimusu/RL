@@ -83,7 +83,6 @@ def play_game():
         # TD(O) for estimating v_policy
         value[old_state] = value[old_state] + learning_step * (reward + discount * value[state] - value[old_state])
 
-
         # if reward != -1:
         #     print("Yay, cracked!", reward)
 
