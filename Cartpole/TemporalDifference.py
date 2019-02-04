@@ -13,8 +13,6 @@ game = "CartPole-v0"
 # game = 'MountainCarContinuous-v0'
 env = gym.make(game)
 
-sp = env.action_space
-print(list(sp))
 
 def discrete(state, round=2):
     """ Discretize the states """
@@ -23,7 +21,7 @@ def discrete(state, round=2):
 
 policy = dict()
 value = {}
-learning_step = 0.1
+alpha = 0.1
 discount = 1
 
 
@@ -81,7 +79,7 @@ def play_game():
             pass
 
         # TD(O) for estimating v_policy
-        value[old_state] = value[old_state] + learning_step * (reward + discount * value[state] - value[old_state])
+        value[old_state] = value[old_state] + alpha * (reward + discount * value[state] - value[old_state])
 
         # if reward != -1:
         #     print("Yay, cracked!", reward)
