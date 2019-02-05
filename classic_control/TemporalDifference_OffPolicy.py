@@ -60,8 +60,9 @@ def play_game(episode_count):
     new_state = env.reset()  # (Re)Start the game
 
     new_state = discrete(new_state)
-    policy[new_state] = env.action_space.sample()
-    episode_states.append(new_state)
+    if policy.get(new_state, -1) == -1:
+        policy[new_state] = env.action_space.sample()
+        episode_states.append(new_state)
 
     terminal_state = False  # Is the episode complete?
     reward_ep = 0
@@ -86,21 +87,18 @@ def play_game(episode_count):
         if policy.get(new_state, -1) == -1:
             policy[new_state] = env.action_space.sample()
 
-        # if terminal_state:  # If this is terminal state
-        #     # If these terminal states has not been seen before, assign Q(S, A) = 0
-        #     for action in action_space:
-        #         if Q.get((new_state, action), -1) == -1:
-        #             Q[(new_state, action)] = 1
-        #             # Q[(state, action)] = 0
-
         # Q - learning for estimating optimal policy
         update_Q(state, action, new_state, reward)
 
-        if episode_count >= 2000:
+        if episode_count >= 190000:
             env.render()
 
-    if episode_count >= 2000:
+    if episode_count >= 190000:
         env.close()
+
+    if reward_ep != -200:
+        print(episode_count, "\tReward : ", reward_ep)
+        print(state, action, Q[state, action])
 
     # Update the policy for each of the states encountered in the episode
     for state in episode_states:
@@ -108,7 +106,7 @@ def play_game(episode_count):
 
 
 if __name__ == '__main__':
-    for i in range(10000):
+    for i in range(200000):
         play_game(i)
         if i % 100 == 0:
             print("Episode ", i, "States : ", policy.items().__len__())
