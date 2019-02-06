@@ -13,13 +13,6 @@ def discrete(state, weights=(1, 2)):
     return tuple(np.round(attribute, weights[index]) for index, attribute in enumerate(state))
 
 
-def argmax_action(state):
-    """ For an input state - find the best action | action that has highest Q(S, A) """
-    if state not in Q.keys():
-        Q[state] = np.ones(3)
-    return np.argmax(Q[state])
-
-
 class GameAgent:
     def __init__(self, game_name='MountainCar-v0', round_states=(1, 2), iterations=10000, alpha=0.05, epsilon=0.04):
         """
@@ -68,7 +61,7 @@ class GameAgent:
                 action = self.env.action_space.sample()
             else:
                 # Choose a greedy action according to argmax of Q(state, action)
-                action = argmax_action(state)
+                action = np.argmax(Q[state])
 
             new_state, reward, episode_over, _ = self.env.step(action)
             new_state = discrete(new_state, self.weights)
@@ -78,8 +71,7 @@ class GameAgent:
                 Q[new_state] = np.ones(self.num_actions)
 
             # Q-learning formual
-            Q[state][action] += self.alpha * (reward + gamma * Q[new_state][argmax_action(new_state)]
-                                              - Q[state][action])
+            Q[state][action] += self.alpha * (reward + gamma * Q[new_state][np.argmax(Q[state])] - Q[state][action])
 
             state = new_state
 
@@ -90,13 +82,13 @@ class GameAgent:
         for episode_count in range(self.total_episodes):
             self.play(episode_count)
 
-            if (episode_count + 1) % 5000 == 0:
+            if (episode_count + 1) % 10000 == 0:
                 print("Step : {} States : {}".format(episode_count, Q.items().__len__()))
 
                 self.visualize_returns()
 
                 # Evaluate the game every 100 steps
-                if episode_count % 100 == 0:
+                if episode_count % 1000 == 0:
                     self.evaluate(episode_count)
 
             # Decay epsilon
@@ -130,5 +122,5 @@ class GameAgent:
 if __name__ == '__main__':
     # Grid search for parameter alpha
     for alpha in [0.1, 0.05, 0.01]:
-        ga = GameAgent(iterations=15000, alpha=alpha)
+        ga = GameAgent(iterations=30000, alpha=alpha)
         ga.run()
