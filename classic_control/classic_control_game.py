@@ -27,17 +27,15 @@ def discrete(state, weights=(1, 2)):
 def argmax_action(state):
     """ For an input state - find the best action | action that has highest Q(S, A) """
     if state not in Q.keys():
-        Q[state] = np.ones((1, 3))
+        Q[state] = np.ones(3)
     return np.argmax(Q[state])
 
 
 def updateQ(state, action, new_state, reward):
     # If the new_state, action does not exist, register it
 
-    state = discrete(state)
-    new_state = discrete(state)
     if new_state not in Q.keys():
-        Q[new_state] = np.ones((1, 3))
+        Q[new_state] = np.ones(3)
 
     Q[state][action] += alpha * (reward + gamma * Q[new_state][argmax_action(new_state)] - Q[state][action])
 
@@ -51,7 +49,7 @@ def play(step):
     state = discrete(state)
 
     if state not in Q.keys():
-        Q[state] = np.ones((1, 3))
+        Q[state] = np.ones(3)
 
     episode_over = False
     while not episode_over:
@@ -67,15 +65,15 @@ def play(step):
         episode_reward += reward
 
         if new_state not in Q.keys():
-            Q[new_state] = np.ones((1, 3))
+            Q[new_state] = np.ones(3)
 
         updateQ(state=state, action=action, new_state=new_state, reward=reward)
         state = new_state
 
-        if step >= 49000:
+        if step >= 9000:
             env.render()
 
-    if step >= 49000:
+    if step >= 9000:
         env.close()  # Need to close if you render
 
     if episode_reward > -200:
@@ -83,7 +81,7 @@ def play(step):
 
 
 if __name__ == '__main__':
-    for step in range(1):
+    for step in range(10000):
         play(step)
-        # if step % 1000 == 0:
-        print("Step : {} States : {} Total Climbs : ".format(step, Q.items().__len__()), total_climbs)
+        if step % 1000 == 0:
+            print("Step : {} States : {} Total Climbs : ".format(step, Q.items().__len__()), total_climbs)
