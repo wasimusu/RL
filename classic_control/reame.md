@@ -2,9 +2,14 @@
 
 I applied grid search over three values of alpha keeping all parameters fixed.
 
-Plots for average returns for every hundred episodes for different values of alpha (learning rate) for 15000 episodes
+### Parameters
+- epsilon = 0.04 for first 10k episodes and 0.01 for others
+- discretization strategy : round(position, 1), round(velocity, 2)
 
-- a = 0.1
+### Plots
+Average returns for every hundred episodes for different values of alpha (learning rate) for 30000 episodes
+
+- a = 0.1, 
 
 ![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/0110.png)
 ![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/0130.png)
