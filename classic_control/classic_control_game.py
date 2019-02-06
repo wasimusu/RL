@@ -1,22 +1,12 @@
 import gym
 import numpy as np
 
-np.random.seed(2)
+np.random.seed(2)  # For repeatable experiments
 
-policy = dict()
 Q = {}
 alpha = 0.05
 gamma = 1
 epsilon = 0.04  # Percentage of random exploration
-total_climbs = 0
-
-# game = "CartPole-v0"
-# action_space = [0, 1]  # Change this line to make things more general
-
-game = 'MountainCar-v0'
-action_space = [0, 1, 2]  # Change this line to make things more general
-
-env = gym.make(game)
 
 
 def discrete(state, weights=(1, 2)):
@@ -40,48 +30,87 @@ def updateQ(state, action, new_state, reward):
     Q[state][action] += alpha * (reward + gamma * Q[new_state][argmax_action(new_state)] - Q[state][action])
 
 
-def play(step):
-    episode_reward = 0
-    global total_climbs
+class GameAgent:
+    def __init__(self, game_name='MountainCar-v0', round_states=None, iterations=10000):
+        """
+        :param game_name: name of the game that you want to play
+        :param round_states: rounds the variables of the state to this number of digits
+        if round_states is None : a balanced weight
+        eg. round_states = [1, 1]
+        if states has two variables that is being observed
+        :param iterations: how many episodes of the game to play
+        """
+        self.game_name = game_name
+        self.game_name = "CartPole-v0"
+        self.env = gym.make(self.game_name)
+        self.num_actions = self.env.action_space.n
+        self.num_state_variables = self.env.observation_space.high.__len__()
+        self.action_space = list(range(self.num_actions))
+        self.total_episodes = iterations
+        self.episode_rewards = []
+        self.total_success = 0  # Number of episodes which it has successfully played
 
-    # Start the game
-    state = env.reset()
-    state = discrete(state)
+        if round_states == None:
+            round_states = [2] * self.num_state_variables
+        if len(round_states) != self.num_state_variables:
+            raise ValueError('Length of weights sould match variables in the observation / state ')
+        self.weights = round_states
 
-    if state not in Q.keys():
-        Q[state] = np.ones(3)
+    def play(self, episode_count):
+        """
+        :param episode_count: What is the current episode we are playing
+        """
+        episode_reward = 0
 
-    episode_over = False
-    while not episode_over:
-        # Do epsilon greedy exploitation
-        if np.random.uniform(0, 1) < epsilon:
-            action = env.action_space.sample()
-        else:
-            # Choose a greedy action according to argmax of Q(state, action)
-            action = argmax_action(state)
+        # Start the game
+        state = self.env.reset()
+        state = discrete(state, self.weights)
 
-        new_state, reward, episode_over, _ = env.step(action)
-        new_state = discrete(new_state)
-        episode_reward += reward
+        if state not in Q.keys():
+            Q[state] = np.ones(self.num_actions)
 
-        if new_state not in Q.keys():
-            Q[new_state] = np.ones(3)
+        episode_over = False
+        while not episode_over:
+            # Do epsilon greedy exploitation
+            if np.random.uniform(0, 1) < epsilon:
+                action = self.env.action_space.sample()
+            else:
+                # Choose a greedy action according to argmax of Q(state, action)
+                action = argmax_action(state)
 
-        updateQ(state=state, action=action, new_state=new_state, reward=reward)
-        state = new_state
+            new_state, reward, episode_over, _ = self.env.step(action)
+            new_state = discrete(new_state, self.weights)
+            episode_reward += reward
 
-        if step >= 9000:
-            env.render()
+            if new_state not in Q.keys():
+                Q[new_state] = np.ones(self.num_actions)
 
-    if step >= 9000:
-        env.close()  # Need to close if you render
+            updateQ(state=state, action=action, new_state=new_state, reward=reward)
+            state = new_state
 
-    if episode_reward > -200:
-        total_climbs += 1
+            if episode_count >= 9000:
+                self.env.render()
+
+        if episode_count >= 9000:
+            self.env.close()  # Need to close if you render
+
+        # if episode_reward > 20:
+        #     self.total_success += 1
+
+        if episode_reward > -200:
+            self.total_success += 1
+
+        # print(episode_count, episode_reward)
+
+    def run(self):
+        """ Play specified number of iterations of the game """
+        for episode_count in range(self.total_episodes):
+            self.play(episode_count)
+            if episode_count % 1000 == 0:
+                print("Step : {} States : {} Total Success : ".format(episode_count, Q.items().__len__()),
+                      self.total_success)
 
 
 if __name__ == '__main__':
-    for step in range(10000):
-        play(step)
-        if step % 1000 == 0:
-            print("Step : {} States : {} Total Climbs : ".format(step, Q.items().__len__()), total_climbs)
+    ga = GameAgent(iterations=1000000)
+    ga.run()
