@@ -6,15 +6,15 @@ Plots for average returns for every hundred episodes for different values of alp
 
 - a = 0.1
 
-![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/015.png)
-![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/0115.png)
+![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/0110.png)
+![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/0130.png)
 
 - a = 0.05
 
-![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/00505.png)
-![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/00515.png)
+![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/00510.png)
+![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/00530.png)
 
 - a = 0.01
 
-![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/0015.png)
-![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/00115.png)
+![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/00110.png)
+![alt text](https://github.com/wasimusu/RL/blob/master/classic_control/plots/00130.png)
