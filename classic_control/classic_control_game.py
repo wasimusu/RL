@@ -1,12 +1,11 @@
 import gym
 import numpy as np
+import matplotlib.pyplot as plt
 
 np.random.seed(2)  # For repeatable experiments
 
 Q = {}
-alpha = 0.05
 gamma = 1
-epsilon = 0.04  # Percentage of random exploration
 
 
 def discrete(state, weights=(1, 2)):
@@ -21,17 +20,8 @@ def argmax_action(state):
     return np.argmax(Q[state])
 
 
-def updateQ(state, action, new_state, reward):
-    # If the new_state, action does not exist, register it
-
-    if new_state not in Q.keys():
-        Q[new_state] = np.ones(3)
-
-    Q[state][action] += alpha * (reward + gamma * Q[new_state][argmax_action(new_state)] - Q[state][action])
-
-
 class GameAgent:
-    def __init__(self, game_name='MountainCar-v0', round_states=None, iterations=10000):
+    def __init__(self, game_name='MountainCar-v0', round_states=(1, 2), iterations=10000, alpha=0.05, epsilon=0.04):
         """
         :param game_name: name of the game that you want to play
         :param round_states: rounds the variables of the state to this number of digits
@@ -40,8 +30,8 @@ class GameAgent:
         if states has two variables that is being observed
         :param iterations: how many episodes of the game to play
         """
+        # self.game_name = "CartPole-v0"
         self.game_name = game_name
-        self.game_name = "CartPole-v0"
         self.env = gym.make(self.game_name)
         self.num_actions = self.env.action_space.n
         self.num_state_variables = self.env.observation_space.high.__len__()
@@ -49,6 +39,8 @@ class GameAgent:
         self.total_episodes = iterations
         self.episode_rewards = []
         self.total_success = 0  # Number of episodes which it has successfully played
+        self.alpha = alpha
+        self.epsilon = epsilon  # Percentage of random exploration
 
         if round_states == None:
             round_states = [2] * self.num_state_variables
@@ -72,7 +64,7 @@ class GameAgent:
         episode_over = False
         while not episode_over:
             # Do epsilon greedy exploitation
-            if np.random.uniform(0, 1) < epsilon:
+            if np.random.uniform(0, 1) < self.epsilon:
                 action = self.env.action_space.sample()
             else:
                 # Choose a greedy action according to argmax of Q(state, action)
@@ -85,32 +77,58 @@ class GameAgent:
             if new_state not in Q.keys():
                 Q[new_state] = np.ones(self.num_actions)
 
-            updateQ(state=state, action=action, new_state=new_state, reward=reward)
+            # Q-learning formual
+            Q[state][action] += self.alpha * (reward + gamma * Q[new_state][argmax_action(new_state)]
+                                              - Q[state][action])
+
             state = new_state
 
-            if episode_count >= 9000:
-                self.env.render()
-
-        if episode_count >= 9000:
-            self.env.close()  # Need to close if you render
-
-        # if episode_reward > 20:
-        #     self.total_success += 1
-
-        if episode_reward > -200:
-            self.total_success += 1
-
-        # print(episode_count, episode_reward)
+        self.episode_rewards.append(episode_reward)
 
     def run(self):
         """ Play specified number of iterations of the game """
         for episode_count in range(self.total_episodes):
             self.play(episode_count)
-            if episode_count % 1000 == 0:
-                print("Step : {} States : {} Total Success : ".format(episode_count, Q.items().__len__()),
-                      self.total_success)
+
+            if (episode_count + 1) % 5000 == 0:
+                print("Step : {} States : {}".format(episode_count, Q.items().__len__()))
+
+                self.visualize_returns()
+
+                # Evaluate the game every 100 steps
+                if episode_count % 100 == 0:
+                    self.evaluate(episode_count)
+
+            # Decay epsilon
+            if episode_count == 10000:
+                self.epsilon = 0.01
+
+    def evaluate(self, episode_count):
+        """
+        Evaluate the performance of the agent over the last 100 episodes.
+        Helpful in seeing if the agent is converging or not
+        """
+        return_last_100 = self.episode_rewards[-100:]
+        average_return_last100 = np.mean(return_last_100)
+        print("Episode : {} \tAverage of last 100 episodes : {}".format(episode_count, average_return_last100))
+
+    def visualize_returns(self):
+        average_returns = np.asarray(self.episode_rewards).reshape(-1, 100)
+        average_returns = np.mean(average_returns, axis=1)
+
+        # Do a polynomail fit to find the underlying increment in the returns
+        X = range(len(average_returns))
+        coeffs = np.polyfit(X, average_returns, 3)
+        Y = np.dot(np.vander(X, len(coeffs)), coeffs)
+
+        plt.plot(X, average_returns)
+        plt.plot(X, Y)
+        plt.title("Average return for every 100 episode vs with alpha = {}".format(self.alpha))
+        plt.show()
 
 
 if __name__ == '__main__':
-    ga = GameAgent(iterations=1000000)
-    ga.run()
+    # Grid search for parameter alpha
+    for alpha in [0.1, 0.05, 0.01]:
+        ga = GameAgent(iterations=15000, alpha=alpha)
+        ga.run()
