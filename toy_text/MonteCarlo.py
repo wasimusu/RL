@@ -1,130 +1,11 @@
-""" Python implementation of Monte Carlo Simulation on BlackJack """
+""" Python implementation of Monte Carlo Simulation on BlackJack using Gym"""
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import gym
 
-
-def state_to_string(player_sum, useable_ace=0, upcard=2):
-    """
-    Convert game stat in state
-    :param upcard : the card that the dealer is showing
-    """
-
-    # Considering all the states below 12 as 11
-    if player_sum < 12:
-        player_sum = 11
-        upcard = 2
-        useable_ace = 0
-
-    # Considering all the states above 21 as 22
-    if player_sum > 21:
-        player_sum = 22
-        upcard = 2
-        useable_ace = 0
-
-    state = "PS_{}_UA_{}_UC_{}".format(player_sum, useable_ace, upcard)
-    return state
-
-
-def state_action_to_string(state, action):
-    """ Convert game stat in state """
-    return "{}_ACT_{}".format(state, action)
-
-
-HIT, STICK = 1, 0
-deck = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]
-
-# 12-21 * USEABLE_ACE * DEALER 2-11 : 10 * 2 * 10
-states = []
-states_action = []
-for player_sum in range(12, 21 + 1):
-    # 0 - no useable ace. 1 - useable ace
-    for useable_ace in [1, 0]:
-        for upcard in range(2, 11 + 1):
-            state = state_to_string(player_sum, useable_ace, upcard)
-            states.append(state)
-            for action in [HIT, STICK]:
-                states_action.append(state_action_to_string(state, action))
-
-state_11 = state_to_string(11)
-state_22 = state_to_string(22)
-
-Q = dict(zip(states_action, np.random.uniform(0, 1, 400)))  # 400 = Number of States * Number of Action
-Q[state_action_to_string(state_11, 1)] = 0  # policy for state less than 12
-Q[state_action_to_string(state_11, 0)] = 0  # policy for state less than 12
-Q[state_action_to_string(state_22, 1)] = 0  # policy for state greater than 21
-Q[state_action_to_string(state_22, 0)] = 0  # policy for state greater than 21
-
-policy = dict(zip(states, np.random.randint(0, 1, 200)))  # 200 = One action that can be taken from each state
-policy[state_22] = 0  # policy for state greater than 21
-policy[state_11] = 1  # policy for state less than 12
-
-state_visit_count = dict(zip(states, [0] * len(states)))  # Keeping count of the visit for each state
-state_visit_count[state_22] = 0  # policy for state greater than 21
-state_visit_count[state_11] = 0  # policy for state less than 12
-
-
-def draw_card(num_cards=1):
-    return int(np.random.choice(deck, num_cards))
-
-
-def sum_deck(deck):
-    sum_deck = sum(deck)
-    if 11 in deck:
-        if sum_deck > 21:
-            sum_deck -= 10
-    return int(sum_deck)
-
-
-def test_sum_deck():
-    decks = [
-        [11, 4, 3, 8],
-        [8, 4, 8],
-        [9, 10, 11],
-        [10, 10, 11],
-        [2, 2, 8],
-        [2, 3, 8, 8]]
-    sums = [16, 20, 20, 21, 12, 21]
-    for deck, sum in zip(decks, sums):
-        assert sum_deck(deck) == sum
-
-
-def evaluate_game(dealer_hand, player_hand):
-    """
-    Returns reward for by comparing dealer's and players' hand
-    Returns win : 1
-    loss : -1
-    draw : 0
-    """
-    # Natural : Receiving a sum of 21 in the first two hands. A blackjack.
-
-    sum_dealer_hand = sum_deck(dealer_hand)
-    sum_player_hand = sum_deck(player_hand)
-
-    # Both of them scoring equal or both of them being bust
-    if sum_dealer_hand == sum_player_hand:
-        return 0
-
-    # Dealer bust
-    if sum_dealer_hand > 21:
-        return 1
-
-    # Player bust
-    if sum_player_hand > 21:
-        return -1
-
-    # Normal outcomes
-    if sum_dealer_hand > sum_player_hand:
-        return -1
-    else:
-        return 1
-
-
-def updateQ(state, action, reward):
-    """ Apply incremental update to Q values for given state """
-    state_visit_count[state] += 1
-    state_action = state_action_to_string(state, action)
-    Q[state_action] = Q[state_action] + (1.0 / state_visit_count[state]) * (reward - Q[state_action])
+env = gym.make('Blackjack-v0')
 
 
 def argmax_action(state):
@@ -135,89 +16,180 @@ def argmax_action(state):
         At each state I can only take two actions : HIT / STICK
         Return the action having higher Q
      """
+    q_stick = Q[state]
 
-    max_q, optimal_action = -1, -1
+    deck = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]
+    drawn_card = np.random.choice(deck)
+    player_sum, upcard, useable_ace = state
+    if drawn_card == 1:
+        useable_ace = True
 
-    # Find the action leading to the highest Q
-    for action in [HIT, STICK]:
-        state_action = state_action_to_string(state, action)
-        if action == HIT:
-            drawn_card = draw_card()
-            _, PS, _, UA, _, UC = state.split("_")
-            new_sum = sum_deck([int(PS), drawn_card])
-            new_state = state_to_string(new_sum, UA, UC)
-            state_action = state_action_to_string(new_state, action)
+    player_sum = player_sum + drawn_card
+    if useable_ace == True:
+        player_sum -= 10
 
-        if Q[state_action] > max_q:
-            optimal_action = action
-            max_q = Q[state_action]
-
-    return optimal_action
+    q_hit = Q[state_to_string(player_sum, upcard, useable_ace)]
+    if q_hit > q_stick:
+        return HIT
+    else:
+        return STICK
 
 
-def generate_states_for_player_hand(player_hand, useable_ace, upcard):
+def state_to_string(player_sum, upcard=2, useable_ace=True):
     """
-    >> generate_states_for_player_hand([2, 4, 6, 8], 1, 10)
-    >> ['P_2_A_1_D_10', 'P_4_A_1_D_10', 'P_7_A_1_D_10', 'P_12_A_1_D_10']
+    Convert game stat in state
+    :param upcard : the card that the dealer is showing
     """
-    return [state_to_string(sum_deck(player_hand[:i]), useable_ace, upcard) for i in
-            range(2, len(player_hand) + 1)]
+
+    # Considering all the states below 12 as 11
+    if player_sum < 12:
+        player_sum = 11
+        upcard = 2
+        useable_ace = False
+
+    # Considering all the states above 21 as 22
+    if player_sum > 21:
+        player_sum = 22
+        upcard = 2
+        useable_ace = False
+
+    state = (player_sum, upcard, useable_ace)
+    return state
+
+
+HIT, STICK = True, False
+
+# 12-21 * USEABLE_ACE * DEALER 2-11 : 10 * 2 * 10
+states = []
+states_action = []
+for player_sum in range(12, 22):
+    # 0 - no useable ace. 1 - useable ace
+    for useable_ace in [True, False]:
+        for upcard in range(1, 11):
+            state = state_to_string(player_sum, upcard, useable_ace)
+            states.append(state)
+
+state_11 = state_to_string(11)
+state_22 = state_to_string(22)
+
+policy = dict(zip(states, np.random.uniform(0, 1, 200)))  # 400 = Number of States * Number of Action
+policy[state_11] = 0  # policy for state less than 12
+policy[state_22] = 0  # policy for state greater than 21
+
+Q = dict(zip(states, np.random.uniform(0, 1, 200)))  # 400 = Number of States * Number of Action
+Q[state_11] = 0  # Q for state less than 12
+Q[state_22] = 0  # Q for state greater than 21
+
+state_visit_count = dict(zip(states, [0] * len(states)))  # Keeping count of the visit for each state
+state_visit_count[state_22] = 0  # policy for state greater than 21
+state_visit_count[state_11] = 0  # policy for state less than 12
+
+
+def updateQ(state, reward):
+    """ Apply incremental update to Q values for given state """
+    player_sum, upcard, useable_ace = state
+    state = state_to_string(player_sum, upcard, useable_ace)
+    state_visit_count[state] += 1
+    Q[state] = Q[state] + (1.0 / state_visit_count[state]) * (reward - Q[state])
 
 
 def play_blackjack():
     # Draw cards until the player's hand sum to 12
 
+    episodic_states = []  # Track states in an episode
     actions = []  # Series of actions that were taken
 
-    dealer_hand, player_hand = [], []
-    while True:
-        dealer_hand.append(draw_card())
-        player_hand.append(draw_card())
-        actions.append(HIT)
-        if sum_deck(player_hand) > 11: break
-
-    upcard = dealer_hand[0]
-    # If the sum if 21, the player won
+    player_sum, upcard, useable_ace = env.reset()  # Re-start the game
+    episodic_states.append((player_sum, upcard, useable_ace))
 
     while True:
-        useable_ace = 1 if 11 in player_hand else 0
-        player_state = state_to_string(sum_deck(player_hand), useable_ace, upcard)
-
         # Play according to policy
-        if policy[player_state] == HIT:  # Draw card
-            dealer_hand.append(draw_card())
-            player_hand.append(draw_card())
+        if player_sum < 20:  # Draw card
+            state, reward, game_over, _ = env.step(True)
+            episodic_states.append(state)
+            player_sum = state[0]
             actions.append(HIT)
+
         else:
-            actions.append(STICK)
-
-            # Evaluate the game for reward
-            reward = evaluate_game(dealer_hand, player_hand)
-            episodic_states = generate_states_for_player_hand(player_hand, useable_ace, upcard)
-
-            assert len(actions) == len(player_hand) + 1
-            actions.pop(0)
-            actions.pop(0)
-            assert len(actions) == len(episodic_states)
+            # Let the game / dealer finish
+            # Step until the game is complete
+            game_over = False
+            while not game_over:
+                state, reward, game_over, _ = env.step(False)
+                episodic_states.append(state)
+                actions.append(STICK)
 
             # Determine the series of actions
             for act, ep_state in zip(actions, episodic_states):
-                updateQ(ep_state, action, reward)
+                updateQ(ep_state, reward)
             break
 
-    # Update the policy after each episode
-    # Do argmax action for each state
-    for i, state in enumerate(states):
-        updated_action = argmax_action(state)
-        if policy[state] != updated_action:
-            # print("Updated : ", state, policy[state], updated_action)
-            policy[state] = argmax_action(state)
+
+def evaluate_policy():
+    for state in states:
+        policy[state] = argmax_action(state)
+
 
 if __name__ == '__main__':
-    for _ in range(5000000):
-        if _ % 1000 == 0:
-            print(_, sum(policy.values()))
+
+    for iteration in range(1000001):
         play_blackjack()
 
-    print(policy)
-    print(state_visit_count)
+        if iteration == 10000 or iteration == 1000000:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+
+            x, y = [], []
+            z_ace = []
+            z_no_ace = []
+            for ps in range(12, 22):
+                for upcard in range(1, 11):
+                    x.append(ps)
+                    y.append(upcard)
+                    z_ace.append(Q[state_to_string(ps, upcard, True)])
+                    z_no_ace.append(Q[state_to_string(ps, upcard, False)])
+
+            ax = fig.gca(projection='3d')
+            ax.set_xlabel("Players Hand")
+            ax.set_ylabel("Upcard")
+            ax.set_zlabel("Q Value")
+
+            # # Useable ace
+            # ax.plot_trisurf(x, y, z_ace, cmap=plt.cm.viridis, linewidth=0.2)
+            # plt.title("Useable Ace {} Iteration".format(iteration))
+
+            # Unuseable ace
+            ax.plot_trisurf(x, y, z_no_ace, cmap=plt.cm.viridis, linewidth=0.2)
+            plt.title("No Useable Ace - {} Iteration".format(iteration))
+
+            plt.show()
+            plt.pause(1)
+
+    # evaluate_policy()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x, y = [], []
+    z_ace = []
+    z_no_ace = []
+    for ps in range(12, 22):
+        for upcard in range(1, 11):
+            x.append(ps)
+            y.append(upcard)
+            z_ace.append(policy[state_to_string(ps, upcard, True)])
+            z_no_ace.append(policy[state_to_string(ps, upcard, False)])
+
+    ax = fig.gca(projection='3d')
+    ax.set_xlabel("Players Hand")
+    ax.set_ylabel("Upcard")
+    ax.set_zlabel("HIT / STICK")
+
+    # # Useable ace
+    # ax.plot_trisurf(x, y, z_ace, cmap=plt.cm.viridis, linewidth=0.2)
+    # plt.title("Useable Ace {} Iteration".format(iteration))
+
+    ax.plot_trisurf(x, y, z_no_ace, cmap=plt.cm.viridis, linewidth=0.2)
+    plt.title("No Useable Ace {} Iteration".format(iteration))
+
+    plt.show()
+    plt.pause(1)
